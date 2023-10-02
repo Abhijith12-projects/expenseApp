@@ -82,11 +82,9 @@ function expensesReducer(state, action) {
       const id = new Date().toString() + Math.random().toString();
       return [{ ...action.payload, id: id }, ...state];
     case "updateItems":
-      console.log("in switch case  updating", action.payload);
       const currentIdx = state.findIndex(
         (expense) => expense.id === action.payload.id
       );
-      console.log(currentIdx, "index");
       const updatedExpense = state[currentIdx];
       const newItem = { ...updatedExpense, ...action.payload.data };
       const finalExpense = [...state];
@@ -102,14 +100,12 @@ const ExpensesContextProvider = ({ children }) => {
   const [expensesState, dispatch] = useReducer(expensesReducer, DUMMY_EXPENSES);
 
   function addExpense(expenseData) {
-    console.log("addExpense", expenseData);
     dispatch({ type: "addItems", payload: expenseData });
   }
   function deleteExpense(id) {
     dispatch({ type: "deleteItems", payload: id });
   }
   function updateExpense(id, expenseData) {
-    console.log(id, expenseData);
     dispatch({ type: "updateItems", payload: { id: id, data: expenseData } });
   }
 
