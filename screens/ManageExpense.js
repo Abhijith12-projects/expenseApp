@@ -1,11 +1,16 @@
-import { useContext, useLayoutEffect } from "react";
+import { useContext, useLayoutEffect, useState } from "react";
 import { View, StyleSheet } from "react-native";
 import IconButton from "../components/UI/IconButton";
 import { Colors } from "../constants/styles";
 import { ExpensesContext } from "../store/expenses-context";
 import ExpenseForm from "../components/manageExpense/ExpenseForm";
+import { deleteExpense, storeExpense, updateExpense } from "../util/http";
+import LoadingOverlay from "../components/UI/LoadingOverlay";
 
 const ManageExpense = ({ route, navigation }) => {
+  const [isLoading, setIsLoading] = useState(false);
+  const [isError, setIsError] = useState();
+
   const editedExpenseId = route.params?.expenseId;
   const isEditing = !!editedExpenseId;
 
@@ -21,22 +26,48 @@ const ManageExpense = ({ route, navigation }) => {
     });
   }, [navigation, isEditing]);
 
-  const deleteExpenseHandler = () => {
-    expenseCtx.deleteExpense(editedExpenseId);
-    navigation.goBack();
+  const deleteExpenseHandler = async () => {
+    setIsLoading(true);
+    try {
+      await deleteExpense(editedExpenseId);
+      expenseCtx.deleteExpense(editedExpenseId);
+      navigation.goBack();
+    } catch (error) {
+      setIsError("Could not Fetch expenses!");
+    }
+    setIsLoading(false);
   };
 
   function cancelHandler() {
     navigation.goBack();
   }
-  function confirmHandler(expenseData) {
-    if (isEditing) {
-      expenseCtx.updateExpense(editedExpenseId, expenseData);
-    } else {
-      expenseCtx.addExpense(expenseData);
-    }
+  async function confirmHandler(expenseData) {
+    setIsLoading(true);
+    try {
+      if (isEditing) {
+        expenseCtx.updateExpense(editedExpenseId, expenseData);
+        await updateExpense(editedExpenseId, expenseData);
+      } else {
+        const id = await storeExpense(expenseData);
+        expenseCtx.addExpense({ ...expenseData, id: id });
+      }
+      navigation.goBack();
+    } catch (error) {
+      setIsError("Could not save data - please try again later!");
 
-    navigation.goBack();
+      setIsLoading(false);
+    }
+  }
+
+  function errorHandler() {
+    setIsError(null);
+  }
+
+  if (isError && !isLoading) {
+    return <ErrorOverlay message={isError} confirm={errorHandler} />;
+  }
+  if (isLoading) {
+    return <LoadingOverlay message={isError} confirm={errorHandler} />;
   }
 
   return (
